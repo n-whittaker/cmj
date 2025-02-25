@@ -54,36 +54,21 @@ for file in cmjs:
     com_vel_z = mocapDF["COMVelocity_z"] / 1000
     sampling_rate = 1000
 
-    # bodyweight phase
-    n_body_weight = 200  # assuming first 50 frames are quiet standing
-    body_weight = np.mean(grfTotal[:n_body_weight])
+    max_velocity = com_vel_z.idxmax()
+    vel_before_max_velocity = com_vel_z[:max_velocity]
 
-    # Unloading phase (BW reduced by at least 2.5%), find first frame below that - Uses GRF
-    unloading_threshold = body_weight - (0.025 * body_weight)
-    unloading_framesBelow = np.where(grfTotal < unloading_threshold)[0]
-    unloading_start = unloading_framesBelow[0] / sampling_rate
+    # Eccentric Deceleration Phase (Max neg-vel to zero)
+    ED_start = vel_before_max_velocity.idxmin()  # Lowest vel before flight phase
+    ED_end = vel_before_max_velocity[ED_start:].ge(0).idxmax()  # Find first 0 value after ED_start
 
-    # Braking phase - uses GRF
-    braking_threshold = body_weight
-    grf_after_unloading = grfTotal[unloading_start:]
-    braking_framesBelow = np.where(grf_after_unloading >= braking_threshold)[0]
-    unloading_start_frame = unloading_framesBelow[0]
-    braking_start_frame = braking_framesBelow[0] + unloading_start_frame
-    braking_start = braking_start_frame / sampling_rate
+    # Concentric Phase (zero vel to takeoff)
+    con_start = ED_start  # Zero vel
+    con_end = max_velocity  # takeoff
 
-    # Propulsive phase: COM velocity goes above 0 AFTER braking phase.
-    propulsive_threshold = 0
-    velocity_after_braking = com_vel_z[braking_start:]
-    propulsive_above_threshold = velocity_after_braking[velocity_after_braking > 0]
-    propulsive_start = propulsive_above_threshold.index[0]
-
-    # Flight phase
-    flight_threshold = 0
-    flight_below_threshold = np.where(grfTotal <= flight_threshold)[0]
-    flight_start = flight_below_threshold[0] / sampling_rate
-
-    # Landing Phase
-    landing_start = flight_below_threshold[-1] / sampling_rate
+    # Landing Phase (Landing to Zero vel)
+    top_of_flight_vel = com_vel_z[con_end:].ge(0).idxmin()  # mid-point of flight where vel = 0
+    landing_start = grfTotal[top_of_flight_vel:].idxmin()
+    landing_end = com_vel_z[landing_start:].ge(0).idxmax()
 
 
     # -------------------------
@@ -112,34 +97,24 @@ for file in cmjs:
 
     # Plot COM Velocity on right axis
     ax2 = ax1.twinx()
-    ax2.plot(com_vel_z, velocity_graph_color, linestyle="--",label="Velocity (m/s)")
+    ax2.plot(com_vel_z, velocity_graph_color, linestyle="--", label="Velocity (m/s)")
     ax2.set_ylabel("Velocity (m/s)", color=velocity_graph_color)
     ax2.tick_params(axis="y", labelcolor=velocity_graph_color)
     ax2.set_ylim(-3, 8)
 
-
-
-
-
-
-
-
     # Draw phase marker lines
-    # ax1.axhline(body_weight, color="gray", linestyle=":" , label='Body weight')
-    ax1.axvline(unloading_start, color="#f4f1de", linestyle="-")
-    ax1.axvline(braking_start, color="#e07a5f", linestyle="-")
-    ax1.axvline(propulsive_start, color="#3d405b", linestyle="-")
-    ax1.axvline(flight_start, color="#81b29a", linestyle="-")
-    ax1.axvline(landing_start, color="#f2cc8f", linestyle="-")
-
+    ax2.axhline(0, color="gray", linestyle=":")
+    ax2.axvline(ED_start, color="red")
+    ax2.axvline(ED_end, color="red")
+    # Not plotting con start as it = ED_end
+    ax2.axvline(con_end, color="blue")
+    ax2.axvline(landing_start, color="green")
+    ax2.axvline(landing_end, color="green")
 
     # Spans
-    ax1.axvspan(0, unloading_start, color='lightgray', alpha=0.1, label='Stance')
-    ax1.axvspan(unloading_start, braking_start, color='#f4f1de', alpha=0.5, label='Unloading')
-    ax1.axvspan(braking_start, propulsive_start, color='#e07a5f', alpha=0.3, label='Braking')
-    ax1.axvspan(propulsive_start, flight_start, color='#3d405b', alpha=0.3, label='Propulsive')
-    ax1.axvspan(flight_start, landing_start, color='#81b29a', alpha=0.3, label='Flight')
-    ax1.axvspan(landing_start, end_time, color='#f2cc8f', alpha=0.3, label='Landing')
+    ax2.axvspan(ED_start, ED_end, color="red", alpha=0.1)  # Eccentric Deceleration
+    ax2.axvspan(ED_end, con_end, color="blue", alpha=0.1)  # Concentric
+    ax2.axvspan(landing_start, landing_end, color="green", alpha=0.1)  # Concentric
 
     # Set the title (using the file name for reference)
     ax1.set_title(f"CMJ Phases: {os.path.basename(file)}")
@@ -152,11 +127,5 @@ for file in cmjs:
     plt.tight_layout()
     plt.show()
 
-    # Print phase start times (in seconds)
-    # print("Unloading start (s):", unloading_start)
-    # print("Braking start (s):", braking_start)
-    # print("Propulsive start (s):", propulsive_start)
-    # print("Flight start (s):", flight_start)
-    # print("Landing start (s):", landing_start)
 
-    print(info)
+
