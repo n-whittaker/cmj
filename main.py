@@ -31,6 +31,8 @@ def getFiles():
 
 cmjs = getFiles()  # All the cmj c3d's in the directory provided
 
+trial_number = 1
+
 # FOR EACH CMJ
 for file in cmjs:
     data = read_c3d(file, read_mocap=True)  # Read the c3d data...
@@ -42,9 +44,6 @@ for file in cmjs:
     mocapDF = pd.DataFrame(mocap)
     grfDF = pd.DataFrame(grf)  # Create a dataFrame from the GRF data
     infoDF = pd.DataFrame(info)
-
-    # print(mocap.columns)  # Printing column headings, showing everything I can pull out of the data
-    # print(grfDF.columns)
 
     # Sum from the two forces to get total vertical GRF
     grfTotal = grfDF["Fz1"] + grfDF["Fz2"]
@@ -92,14 +91,14 @@ for file in cmjs:
     ax2.tick_params(axis="y", labelcolor=velocity_graph_color)
     ax2.set_ylim(-3, 8)
 
-    # Draw phase marker lines
-    ax2.axhline(0, color="gray", linestyle=":")
-    ax2.axvline(ED_start, color="red")
-    ax2.axvline(ED_end, color="red")
-    # Not plotting con start as it = ED_end
-    ax2.axvline(con_end, color="blue")
-    ax2.axvline(landing_start, color="green")
-    ax2.axvline(landing_end, color="green")
+    # Draw phase marker lines (COMMENTED OUT AS MAKES GRAPH EASIER TO LOOK AT)
+    # ax2.axhline(0, color="gray", linestyle=":")
+    # ax2.axvline(ED_start, color="red")
+    # ax2.axvline(ED_end, color="red")
+    # # Not plotting con start as it = ED_end
+    # ax2.axvline(con_end, color="blue")
+    # ax2.axvline(landing_start, color="green")
+    # ax2.axvline(landing_end, color="green")
 
     # Spans
     ax2.axvspan(ED_start, ED_end, color="red", alpha=0.1, label="Eccentric Deceleration")  # Eccentric Deceleration
@@ -114,6 +113,15 @@ for file in cmjs:
     handles2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(handles1 + handles2, labels1 + labels2, loc="upper right")
 
+    # This is just for looking at MOMENT graphs to see if they look right
+    ax3 = ax1.twinx()
+    # ax3.plot(mocapDF["LHipMoment_x"], label="Hip Moment", color="black")
+    # ax3.plot(mocapDF["LKneeMoment_x"], label="Knee Moment", color="black")
+    # ax3.plot(mocapDF["LAnkleMoment_x"], label="Ankle Moment", color="black")
+    # ax3.plot(mocapDF["LHipAngles_x"], label="Hip  Angle", color="black")
+    # ax3.plot(mocapDF["LKneeAngles_x"], label="Knee Angle", color="black")
+    # ax3.plot(mocapDF["LAnkleAngles_x"], label="Ankle Angle", color="black")
+
     plt.tight_layout()
     plt.show()
 
@@ -121,13 +129,70 @@ for file in cmjs:
     # Variable calculations
     # -------------------------
 
-    # Variables to calaculate:
     # Jump height
     g = 9.81  # Gravity
     v_takeoff = com_vel_z.loc[con_end]  # Extract velocity at takeoff
-
     # Calculate jump height using the impulse-momentum equation
     jump_height = (v_takeoff ** 2) / (2 * g)
     jump_height_cm = jump_height * 100
     jump_height_cm_rounded = round(jump_height_cm, 2)  # Round to 2 decimal places
-    print(jump_height_cm_rounded, "cm")
+
+    # Peak GRFV Left + Right
+    peak_GRFv_Left = round(grfDF["Fz2"].max(), 2)
+    peak_GRFv_Right = round(grfDF["Fz1"].max(), 2)
+
+    # Peak HKA Extension Moments
+    peak_H_moment_Left = round(mocapDF["LHipMoment_x"].max(), 2)
+    peak_H_moment_Right = round(mocapDF["RHipMoment_x"].max(), 2)
+    peak_K_moment_Left = round(mocapDF["LKneeMoment_x"].max(), 2)
+    peak_K_moment_Right = round(mocapDF["RKneeMoment_x"].max(), 2)
+    peak_A_moment_Left = round(mocapDF["LAnkleMoment_x"].max(), 2)
+    peak_A_moment_Right = round(mocapDF["RAnkleMoment_x"].max(), 2)
+
+    # Peak HKA Flexion Angles
+    peak_H_angle_Left = round(mocapDF["LHipAngles_x"].max(), 2)
+    peak_H_angle_Right = round(mocapDF["RHipAngles_x"].max(), 2)
+    peak_K_angle_Left = round(mocapDF["LKneeAngles_x"].max(), 2)
+    peak_K_angle_Right = round(mocapDF["RKneeAngles_x"].max(), 2)
+    peak_A_angle_Left = round(mocapDF["LAnkleAngles_x"].max(), 2)
+    peak_A_angle_Right = round(mocapDF["RAnkleAngles_x"].max(), 2)
+
+    # Impulse using trapezoid rule
+    # Time step based on  sampling rate
+    dt = 1.0 / sampling_rate
+    # Eccentric deceleration phase
+    impulse_ED_right = round(np.trapz(grfDF["Fz1"][ED_start:ED_end], dx=dt), 2)
+    impulse_ED_left = round(np.trapz(grfDF["Fz2"][ED_start:ED_end], dx=dt), 2)
+    # Concentric phase
+    impulse_con_right = round(np.trapz(grfDF["Fz1"][ED_end:con_end], dx=dt), 2)
+    impulse_con_left = round(np.trapz(grfDF["Fz2"][ED_end:con_end], dx=dt), 2)
+    # Landing phase:
+    impulse_landing_right = round(np.trapz(grfDF["Fz1"][landing_start:landing_end], dx=dt), 2)
+    impulse_landing_left = round(np.trapz(grfDF["Fz2"][landing_start:landing_end], dx=dt), 2)
+
+    # Asymmetry Indices
+    # AI = ((Dominant vs Non-Dominant) / (Maximum of dominant and non-dominant)) * 100
+    # May need to look at spreadsheet to determine dominant legs
+
+    # -------------------------
+    # Print Variables
+    # -------------------------
+    print("Trial number: ", trial_number)
+    print("Jump Height (cm): ", jump_height_cm_rounded)
+    print("Peak GRFv Left (N): ", peak_GRFv_Left)
+    print("Peak GRFv Right (N): ", peak_GRFv_Right)
+    print("Peak H Extension Moment (N): LEFT: ", peak_H_moment_Left, " RIGHT: ", peak_H_moment_Right)
+    print("Peak K Extension Moment (N): LEFT: ", peak_K_moment_Left, " RIGHT: ", peak_K_moment_Right)
+    print("Peak A Extension Moment (N): LEFT: ", peak_A_moment_Left, " RIGHT: ", peak_A_moment_Right)
+    print("Peak H Flexion Angle (N): LEFT: ", peak_H_angle_Left, " RIGHT: ", peak_H_angle_Right)
+    print("Peak K Flexion Angle (N): LEFT: ", peak_K_angle_Left, " RIGHT: ", peak_K_angle_Right)
+    print("Peak A Flexion Angle (N): LEFT: ", peak_A_angle_Left, " RIGHT: ", peak_A_angle_Right)
+    print("ED Impulse (N.s) LEFT:", impulse_ED_left, " RIGHT:", impulse_ED_right)
+    print("CON Impulse (N.s) LEFT:", impulse_con_left, " RIGHT:", impulse_con_right)
+    print("Landing Impulse (N.s) LEFT:", impulse_landing_left, " RIGHT:", impulse_landing_right)
+
+    print("")  # Spacer for readability in the terminal
+
+    trial_number += 1  # iterate trial number
+
+
