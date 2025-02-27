@@ -17,14 +17,11 @@ pd.set_option('display.max_seq_items', None)
 # Get CMJ c3d files
 def getFiles():
     files = []
-
     # Walk through directory, check for "new session", go through files in new session, return CMJ c3ds
     # list.
     for (dirpath, dirnames, filenames) in os.walk(root_dir):
-
         if "New Session" in dirnames:
             new_session_path = os.path.join(dirpath, "New Session")
-
             for session_file in os.listdir(new_session_path):
                 if session_file.endswith(f".c3d") and "CMJ" in session_file and "SL" not in session_file:
                     file_path = os.path.join(new_session_path, session_file)
@@ -70,7 +67,6 @@ for file in cmjs:
     landing_start = grfTotal[top_of_flight_vel:].idxmin()
     landing_end = com_vel_z[landing_start:].ge(0).idxmax()
 
-
     # -------------------------
     # Plotting
     # -------------------------
@@ -81,12 +77,6 @@ for file in cmjs:
     end_time = len(grfTotal) / sampling_rate
 
     fig, ax1 = plt.subplots(figsize=(10, 6))
-
-    # Plot GRF on left axis
-    # ax1.plot(grfTotal, grf_graph_color, label="GRF (N)")
-    # ax1.set_xlabel("Frame")
-    # ax1.set_ylabel("GRF (N)", color=grf_graph_color)
-    # ax1.tick_params(axis="y", labelcolor=grf_graph_color)
 
     # FP1 = Right, FP2 = Left
 
@@ -112,9 +102,9 @@ for file in cmjs:
     ax2.axvline(landing_end, color="green")
 
     # Spans
-    ax2.axvspan(ED_start, ED_end, color="red", alpha=0.1)  # Eccentric Deceleration
-    ax2.axvspan(ED_end, con_end, color="blue", alpha=0.1)  # Concentric
-    ax2.axvspan(landing_start, landing_end, color="green", alpha=0.1)  # Concentric
+    ax2.axvspan(ED_start, ED_end, color="red", alpha=0.1, label="Eccentric Deceleration")  # Eccentric Deceleration
+    ax2.axvspan(ED_end, con_end, color="blue", alpha=0.1, label="Concentric")  # Concentric
+    ax2.axvspan(landing_start, landing_end, color="green", alpha=0.1, label="Landing")  # Concentric
 
     # Set the title (using the file name for reference)
     ax1.set_title(f"CMJ Phases: {os.path.basename(file)}")
@@ -127,5 +117,17 @@ for file in cmjs:
     plt.tight_layout()
     plt.show()
 
+    # -------------------------
+    # Variable calculations
+    # -------------------------
 
+    # Variables to calaculate:
+    # Jump height
+    g = 9.81  # Gravity
+    v_takeoff = com_vel_z.loc[con_end]  # Extract velocity at takeoff
 
+    # Calculate jump height using the impulse-momentum equation
+    jump_height = (v_takeoff ** 2) / (2 * g)
+    jump_height_cm = jump_height * 100
+    jump_height_cm_rounded = round(jump_height_cm, 2)  # Round to 2 decimal places
+    print(jump_height_cm_rounded, "cm")
