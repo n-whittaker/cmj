@@ -35,16 +35,17 @@ else:
 # Get CMJ c3d files
 def getFiles():
     files = []
-    # Walk through directory, check for "New Session" and ENF file.
+    # Walk through directory, check for any folder with "New Session" in its name
     for (dirpath, dirnames, filenames) in os.walk(root_dir):
+        for d in dirnames:
+            if "New Session" in d:  # This checks if the substring is in the directory name
+                new_session_path = os.path.join(str(dirpath), str(d))
+                for session_file in os.listdir(new_session_path):
+                    session_file = str(session_file)  # Ensure session_file is a string
+                    if session_file.endswith(".c3d") and "CMJ" in session_file and "SL" not in session_file:
+                        file_path = os.path.join(new_session_path, session_file)
+                        files.append(file_path)
 
-        # Look for CMJ c3d files in "New Session"
-        if "New Session" in dirnames:
-            new_session_path = os.path.join(dirpath, "New Session")
-            for session_file in os.listdir(new_session_path):
-                if session_file.endswith(".c3d") and "CMJ" in session_file and "SL" not in session_file:
-                    file_path = os.path.join(new_session_path, session_file)
-                    files.append(file_path)
     return files
 
 
@@ -218,6 +219,7 @@ for file in cmjs:
     peak_ankle_moment_con_Right = round(mocapDF["RKneeMoment_x"][con_start:con_end].max(), 2)
     peak_ankle_moment_landing_Right = round(mocapDF["RKneeMoment_x"][landing_start:landing_end].max(), 2)
 
+
     # DESCRIPTIVE VARIABLES INTO A DICTIONARY
     # var_outputs = {
     #     "Jump Height (cm)": jump_height_cm,
@@ -276,23 +278,22 @@ for file in cmjs:
     # Positive number means uninjured performed BETTER than injured
     def AI_calc(right, left, inj_side):
         asymIndex = None
+        print(right, left)
 
-        if inj_side == "Right":
+        print(left - right)
+
+        if inj_side.lower().startswith("r"):  # Input can vary e.g "Right" or "R"
             asymIndex = ((left - right) / max(right, left)) * 100
-        elif inj_side == "Left":
+        elif inj_side.lower().startswith("l"):
             asymIndex = ((right - left) / max(right, left)) * 100
-
-        return asymIndex
-
-
-
+        return round(asymIndex, 2)
 
 
     # -------------------------
     # Print Variables
     # -------------------------
     print("Trial number: ", trial_number)
-    print(AI_calc(peak_knee_moment_con_Right, peak_knee_moment_con_Left, injured_side))
+    print(AI_calc(peak_GRFv_con_Right, peak_GRFv_con_Left, injured_side), "%")
     print("")  # Spacer for readability in the terminal
 
     trial_number += 1  # iterate trial number
