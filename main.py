@@ -4,7 +4,7 @@ import numpy as np
 import os
 from read_c3d import read_c3d
 
-root_dir = "/Users/nick/Documents/University/Research Project/PT"
+root_dir = "/Users/nick/Documents/University/Research Project/HT"
 
 
 # Setting the directory to run through
@@ -49,10 +49,13 @@ def calcPatient(patient_dir):
 
     cmjs = getFiles()  # All the cmj c3d's in the directory provided
 
+    trial_results = []  # List to store results for all trials for this patient
     trial_number = 1
 
     # FOR EACH CMJ
     for file in cmjs:
+        patient_name = os.path.basename(os.path.dirname(os.path.dirname(file)))
+
         data = read_c3d(file, read_mocap=True)  # Read the c3d data...
 
         mocap = data["MoCap"]  # And separate it into the motion capture data..
@@ -209,6 +212,8 @@ def calcPatient(patient_dir):
 
         # DESCRIPTIVE VARIABLES INTO A DICTIONARY
         var_outputs = {
+            # "Patient": patient_name, # ONLY ADD WHEN GENERATING DESCRIPTIVES!!!
+            # "Trial Number": trial_number,
             "Jump Height (cm)": jump_height_cm,
             "Impulse ED Right (N·s)": impulse_ED_Right,
             "Impulse ED Left (N·s)": impulse_ED_Left,
@@ -320,9 +325,10 @@ def calcPatient(patient_dir):
         # print(absolute_asymmetries)
         # print("")  # Spacer for readability in the terminal
 
-        trial_number += 1  # iterate trial number
+        trial_results.append(absolute_asymmetries)
+        trial_number += 1
 
-        return absolute_asymmetries
+    return trial_results
 
 
 # Now, iterate through each patient folder in the root directory
@@ -334,12 +340,13 @@ for folder in os.listdir(root_dir):
     if os.path.isdir(patient_path):
         patient_data = calcPatient(patient_path)
         if patient_data:  # Only add if data was returned
-            all_results.append(patient_data)
+            all_results.extend(patient_data)
 
 # Convert results to a DataFrame and export to Excel or CSV
 df = pd.DataFrame(all_results)
 print(df)
-# df.to_excel("AllPatients.xlsx", index=False)
+excel_output_path = "/Users/nick/Documents/University/Research Project/DATA OUTPUT SPREADSHEETS/HT/HT_AAI.xlsx"
+df.to_excel(excel_output_path, index=False)
 # Alternatively:
 # df.to_csv("AllPatients.csv", index=False)
 
