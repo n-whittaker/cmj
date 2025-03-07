@@ -4,6 +4,7 @@ import numpy as np
 import os
 from read_c3d import read_c3d
 
+# root_dir = "/Users/nick/Documents/University/Research Project/Not being used/patients with missing mocap data /HT"
 root_dir = "/Users/nick/Documents/University/Research Project/PT"
 
 
@@ -72,7 +73,12 @@ def calcPatient(patient_dir):
         com_vel_z = None
 
         if "COMVelocity_z" not in mocapDF.columns:  # Some data is missing Com velocity, this is to check
-            print("Column 'COMVelocity_z' not found. Available columns:", mocapDF.columns.tolist())
+            # print("Column 'COMVelocity_z' not found. Available columns:", mocapDF.columns.tolist())
+            dt = 1.0 / sampling_rate # Calculate time step
+            # Use central difference method to calculate COM velocity Z based off COMz position
+            mocapDF["COMVelocity_z"] = np.gradient(mocapDF["CentreOfMass_z"], dt)
+            com_vel_z = mocapDF["COMVelocity_z"] / sampling_rate
+
         else:
             com_vel_z = mocapDF["COMVelocity_z"] / sampling_rate
 
@@ -366,8 +372,11 @@ for folder in os.listdir(root_dir):
 # Convert results to a DataFrame and export to Excel or CSV
 df = pd.DataFrame(all_results)
 print(df)
-excel_output_path = "/Users/nick/Documents/University/Research Project/DATA OUTPUT SPREADSHEETS/New Method/PT/PT_Absolute_Asymmetries.xlsx"
+
+# UNCOMMENT LINES BELOW TO EXPORT TO EXCEL
+excel_output_path = "/Users/nick/Documents/University/Research Project/DATA OUTPUT SPREADSHEETS/Missing data patients included/PT/PT_Absolute_Asymmetries.xlsx"
 df.to_excel(excel_output_path, index=False)
+
 # Alternatively:
 # df.to_csv("AllPatients.csv", index=False)
 
