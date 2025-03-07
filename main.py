@@ -167,52 +167,52 @@ def calcPatient(patient_dir):
         peak_GRFv_landing_Left = grf["Fz2"][landing_start:landing_end].max()
 
         # Peak Hip Flexion Angles
-        peak_hip_angle_ED_Left = mocapDF["LHipAngles_x"][landing_start:landing_end].max()
+        peak_hip_angle_ED_Left = mocapDF["LHipAngles_x"][ED_start:ED_end].max()
         peak_hip_angle_con_Left = mocapDF["LHipAngles_x"][con_start:con_end].max()
         peak_hip_angle_landing_Left = mocapDF["LHipAngles_x"][landing_start:landing_end].max()
-        peak_hip_angle_ED_Right = mocapDF["RHipAngles_x"][landing_start:landing_end].max()
+        peak_hip_angle_ED_Right = mocapDF["RHipAngles_x"][ED_start:ED_end].max()
         peak_hip_angle_con_Right = mocapDF["RHipAngles_x"][con_start:con_end].max()
         peak_hip_angle_landing_Right = mocapDF["RHipAngles_x"][landing_start:landing_end].max()
 
         # Peak Knee Flexion Angles
-        peak_knee_angle_ED_Left = mocapDF["LKneeAngles_x"][landing_start:landing_end].max()
+        peak_knee_angle_ED_Left = mocapDF["LKneeAngles_x"][ED_start:ED_end].max()
         peak_knee_angle_con_Left = mocapDF["LKneeAngles_x"][con_start:con_end].max()
         peak_knee_angle_landing_Left = mocapDF["LKneeAngles_x"][landing_start:landing_end].max()
-        peak_knee_angle_ED_Right = mocapDF["RKneeAngles_x"][landing_start:landing_end].max()
+        peak_knee_angle_ED_Right = mocapDF["RKneeAngles_x"][ED_start:ED_end].max()
         peak_knee_angle_con_Right = mocapDF["RKneeAngles_x"][con_start:con_end].max()
         peak_knee_angle_landing_Right = mocapDF["RKneeAngles_x"][landing_start:landing_end].max()
 
         # Peak Ankle Flexion Angles
-        peak_ankle_angle_ED_Left = mocapDF["LKneeAngles_x"][landing_start:landing_end].max()
-        peak_ankle_angle_con_Left = mocapDF["LKneeAngles_x"][con_start:con_end].max()
-        peak_ankle_angle_landing_Left = mocapDF["LKneeAngles_x"][landing_start:landing_end].max()
-        peak_ankle_angle_ED_Right = mocapDF["RKneeAngles_x"][landing_start:landing_end].max()
-        peak_ankle_angle_con_Right = mocapDF["RKneeAngles_x"][con_start:con_end].max()
-        peak_ankle_angle_landing_Right = mocapDF["RKneeAngles_x"][landing_start:landing_end].max()
+        peak_ankle_angle_ED_Left = mocapDF["LAnkleAngles_x"][ED_start:ED_end].max()
+        peak_ankle_angle_con_Left = mocapDF["LAnkleAngles_x"][con_start:con_end].max()
+        peak_ankle_angle_landing_Left = mocapDF["LAnkleAngles_x"][landing_start:landing_end].max()
+        peak_ankle_angle_ED_Right = mocapDF["RAnkleAngles_x"][ED_start:ED_end].max()
+        peak_ankle_angle_con_Right = mocapDF["RAnkleAngles_x"][con_start:con_end].max()
+        peak_ankle_angle_landing_Right = mocapDF["RAnkleAngles_x"][landing_start:landing_end].max()
 
         # Peak Hip Extension Moment
-        peak_hip_moment_ED_Left = mocapDF["LHipMoment_x"][landing_start:landing_end].max()
+        peak_hip_moment_ED_Left = mocapDF["LHipMoment_x"][ED_start:ED_end].max()
         peak_hip_moment_con_Left = mocapDF["LHipMoment_x"][con_start:con_end].max()
         peak_hip_moment_landing_Left = mocapDF["LHipMoment_x"][landing_start:landing_end].max()
-        peak_hip_moment_ED_Right = mocapDF["RHipMoment_x"][landing_start:landing_end].max()
+        peak_hip_moment_ED_Right = mocapDF["RHipMoment_x"][ED_start:ED_end].max()
         peak_hip_moment_con_Right = mocapDF["RHipMoment_x"][con_start:con_end].max()
         peak_hip_moment_landing_Right = mocapDF["RHipMoment_x"][landing_start:landing_end].max()
 
         # Peak Knee Extension Moment
-        peak_knee_moment_ED_Left = mocapDF["LKneeMoment_x"][landing_start:landing_end].max()
+        peak_knee_moment_ED_Left = mocapDF["LKneeMoment_x"][ED_start:ED_end].max()
         peak_knee_moment_con_Left = mocapDF["LKneeMoment_x"][con_start:con_end].max()
         peak_knee_moment_landing_Left = mocapDF["LKneeMoment_x"][landing_start:landing_end].max()
-        peak_knee_moment_ED_Right = mocapDF["RKneeMoment_x"][landing_start:landing_end].max()
+        peak_knee_moment_ED_Right = mocapDF["RKneeMoment_x"][ED_start:ED_end].max()
         peak_knee_moment_con_Right = mocapDF["RKneeMoment_x"][con_start:con_end].max()
-        peak_knee_moment_landing_Right = mocapDF["RKneeMoment_x"][landing_start:landing_end].max()
+        peak_knee_moment_landing_Right = mocapDF["RKneeMoment_x"][ED_start:ED_end].max()
 
         # Peak Knee Extension Moment
-        peak_ankle_moment_ED_Left = mocapDF["LKneeMoment_x"][landing_start:landing_end].max()
-        peak_ankle_moment_con_Left = mocapDF["LKneeMoment_x"][con_start:con_end].max()
-        peak_ankle_moment_landing_Left = mocapDF["LKneeMoment_x"][landing_start:landing_end].max()
-        peak_ankle_moment_ED_Right = mocapDF["RKneeMoment_x"][landing_start:landing_end].max()
-        peak_ankle_moment_con_Right = mocapDF["RKneeMoment_x"][con_start:con_end].max()
-        peak_ankle_moment_landing_Right = mocapDF["RKneeMoment_x"][landing_start:landing_end].max()
+        peak_ankle_moment_ED_Left = mocapDF["LAnkleMoment_x"][ED_start:ED_end].max()
+        peak_ankle_moment_con_Left = mocapDF["LAnkleMoment_x"][con_start:con_end].max()
+        peak_ankle_moment_landing_Left = mocapDF["LAnkleMoment_x"][landing_start:landing_end].max()
+        peak_ankle_moment_ED_Right = mocapDF["RAnkleMoment_x"][ED_start:ED_end].max()
+        peak_ankle_moment_con_Right = mocapDF["RAnkleMoment_x"][con_start:con_end].max()
+        peak_ankle_moment_landing_Right = mocapDF["RAnkleMoment_x"][landing_start:landing_end].max()
 
         # DESCRIPTIVE VARIABLES INTO A DICTIONARY
         var_outputs = {
