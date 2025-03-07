@@ -4,7 +4,7 @@ import numpy as np
 import os
 from read_c3d import read_c3d
 
-root_dir = "/Users/nick/Documents/University/Research Project/HT"
+root_dir = "/Users/nick/Documents/University/Research Project/PT"
 
 
 # Setting the directory to run through
@@ -62,21 +62,19 @@ def calcPatient(patient_dir):
         grf = data["GRF"]  # The GRF data
         info = data["Info"]  # And general info
 
-        mocapDF = pd.DataFrame(mocap)
-        grfDF = pd.DataFrame(grf)  # Create a dataFrame from the GRF data
+        mocapDF = pd.DataFrame(mocap)  # Create dataFrames
+        grfDF = pd.DataFrame(grf)
         infoDF = pd.DataFrame(info)
 
-        # Sum from the two forces to get total vertical GRF
-        grfTotal = grfDF["Fz1"] + grfDF["Fz2"]
+        grfTotal = grfDF["Fz1"] + grfDF["Fz2"]  # Sum of the two forces to get total vertical GRF
+        sampling_rate = 1000
 
         com_vel_z = None
+
         if "COMVelocity_z" not in mocapDF.columns:  # Some data is missing Com velocity, this is to check
             print("Column 'COMVelocity_z' not found. Available columns:", mocapDF.columns.tolist())
-            # You may choose to handle the error, e.g., skip this file or assign a default value.
         else:
-            com_vel_z = mocapDF["COMVelocity_z"] / 1000
-
-        sampling_rate = 1000
+            com_vel_z = mocapDF["COMVelocity_z"] / sampling_rate
 
         max_velocity = com_vel_z.idxmax()
         vel_before_max_velocity = com_vel_z[:max_velocity]
@@ -271,8 +269,18 @@ def calcPatient(patient_dir):
         # Positive number means uninjured performed BETTER than injured
         # -------------------------
 
+        # Separate joint angles from the rest as they need different AI calculation
+        angle_vars = {}
+        non_angle_vars = {}
+
+        for key, value in var_outputs.items():  # Checking if it's an angle variable
+            if "Angle" in key:
+                angle_vars[key] = value
+            else:
+                non_angle_vars[key] = value
+
         # Calculate asymmetry
-        def AI_calc(right, left, inj_side):
+        def AI_calc_standard(right, left, inj_side):
             asymIndex = None
 
             if inj_side.lower().startswith("r"):  # Input can vary e.g "Right" or "R"
@@ -283,69 +291,82 @@ def calcPatient(patient_dir):
                 raise ValueError("Injured side not recognised: ", patient_dir)
             return asymIndex
 
-        var_asymmetries = {}
+        def AI_calc_angle(right, left, inj_side):
+            if inj_side.lower().startswith("r"):
+                return left - right
+            elif inj_side.lower().startswith("l"):
+                return right - left
+            else:
+                raise ValueError("Injured side not recognised.")
 
-        # Making the new dictionary
-        for key in var_outputs:
+        # Calculating asymmetries separately for non-angles
+        var_asym_non_angles = {}
+        for key in non_angle_vars:
             if "Right" in key:
-                # Create the corresponding left key by replacing "Right" with "Left"
                 right_key = key
                 left_key = key.replace("Right", "Left")
-                # Remove the units and side indicator from the key to create a base label
-                # Example: "Impulse ED Right (N·s)" -> "Impulse ED"
-                base_key = right_key.split("Right")[0].strip()  # everything before "Right"
-                base_key = base_key.split(" (")[0].strip()  # remove units if present
+                # Create base key by removing "right" and units
+                base_key = right_key.split("Right")[0].strip().split(" (")[0].strip()
+                right_value = non_angle_vars[right_key]
+                left_value = non_angle_vars[left_key]
+                ai_value = AI_calc_standard(right_value, left_value, injured_side)
+                var_asym_non_angles[base_key] = ai_value
 
-                # Retrieve the values for right and left
-                right_value = var_outputs[right_key]
-                left_value = var_outputs[left_key]
+        # Calculate asymmetries separately for joint angle variables using a different function
+        var_asym_angles = {}
+        for key in angle_vars:
+            if "Right" in key:
+                right_key = key
+                left_key = key.replace("Right", "Left")
+                base_key = right_key.split("Right")[0].strip().split(" (")[0].strip()
+                right_value = angle_vars[right_key]
+                left_value = angle_vars[left_key]
+                ai_value = AI_calc_angle(right_value, left_value, injured_side)
+                var_asym_angles[base_key] = ai_value
 
-                # Calculate the asymmetry index using your injured side (inj_side)
-                ai_value = AI_calc(right_value, left_value, injured_side)
-
-                # Store it in the new dictionary with the base key
-                var_asymmetries[base_key] = ai_value
+        # Joining the two dictionaries together, so I can output them all at the same time
+        combined_asymmetries = {}
+        combined_asymmetries.update(var_asym_non_angles)
+        combined_asymmetries.update(var_asym_angles)
 
         # Absolute Asymmetry Indices
-        absolute_asymmetries = var_asymmetries.copy()
+        absolute_asymmetries = combined_asymmetries.copy()
         # Iterate and update each value with its AAI = should just be the same value but with direction taken away.
         for key, value in absolute_asymmetries.items():
             # Square root of the squared AI
             absolute_asymmetries[key] = abs(value)
 
-        # -------------------------
-        # Print Variables
-        # -------------------------
-        # print("Trial number: ", trial_number)
-        # print("Base variables:")
-        # print(var_outputs)
-        # print("Asymmetries:")
-        # print(var_asymmetries)
-        # print("Absolute asymmetries:")
-        # print(absolute_asymmetries)
-        # print("")  # Spacer for readability in the terminal
-
-        trial_results.append(absolute_asymmetries)
+        trial_results.append(absolute_asymmetries)  # THIS IS WHERE I CHANGE WHAT I WANT TO OUTPUT (var_outputs,
+        # combined asymmetries, absolute asymmetries)
         trial_number += 1
 
-    return trial_results
+        # Average the trial results if there are multiple trials
+    if trial_results:
+        # Create a DataFrame from the list of trial dictionaries and average them across trials
+        avg_df = pd.DataFrame(trial_results).mean(axis=0)
+        avg_trial = avg_df.to_dict()
+        # Add patient-level information
+        avg_trial["Patient"] = os.path.basename(patient_dir)
+        return avg_trial
+    else:
+        return None
 
 
 # Now, iterate through each patient folder in the root directory
 all_results = []
 
-# Assume each subfolder in root_dir is a patient folder
+# Assume each sub folder in root_dir is a patient folder
 for folder in os.listdir(root_dir):
     patient_path = os.path.join(root_dir, folder)
     if os.path.isdir(patient_path):
         patient_data = calcPatient(patient_path)
         if patient_data:  # Only add if data was returned
-            all_results.extend(patient_data)
+            all_results.append(patient_data)
 
 # Convert results to a DataFrame and export to Excel or CSV
 df = pd.DataFrame(all_results)
 print(df)
-excel_output_path = "/Users/nick/Documents/University/Research Project/DATA OUTPUT SPREADSHEETS/HT/HT_AAI.xlsx"
+excel_output_path = "/Users/nick/Documents/University/Research Project/DATA OUTPUT SPREADSHEETS/New Method/PT/PT_Absolute_Asymmetries.xlsx"
 df.to_excel(excel_output_path, index=False)
 # Alternatively:
 # df.to_csv("AllPatients.csv", index=False)
