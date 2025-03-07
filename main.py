@@ -5,7 +5,7 @@ import os
 from read_c3d import read_c3d
 
 # root_dir = "/Users/nick/Documents/University/Research Project/Not being used/patients with missing mocap data /HT"
-root_dir = "/Users/nick/Documents/University/Research Project/PT"
+root_dir = "/Users/nick/Documents/University/Research Project/HT"
 
 
 # Setting the directory to run through
@@ -90,7 +90,7 @@ def calcPatient(patient_dir):
         ED_end = vel_before_max_velocity[ED_start:].ge(0).idxmax()  # Find first 0 value after ED_start
 
         # Concentric Phase (zero vel to takeoff)
-        con_start = ED_start  # Zero vel
+        con_start = ED_end  # Zero vel
         con_end = max_velocity  # takeoff
 
         # Landing Phase (Landing to Zero vel)
@@ -153,8 +153,8 @@ def calcPatient(patient_dir):
         dt = 1.0 / sampling_rate  # Time step based on  sampling rate
         impulse_ED_Right = np.trapz(grfDF["Fz1"][ED_start:ED_end], dx=dt)
         impulse_ED_Left = np.trapz(grfDF["Fz2"][ED_start:ED_end], dx=dt)
-        impulse_con_Right = np.trapz(grfDF["Fz1"][ED_end:con_end], dx=dt)
-        impulse_con_Left = np.trapz(grfDF["Fz2"][ED_end:con_end], dx=dt)
+        impulse_con_Right = np.trapz(grfDF["Fz1"][con_start:con_end], dx=dt)
+        impulse_con_Left = np.trapz(grfDF["Fz2"][con_start:con_end], dx=dt)
         impulse_landing_Right = np.trapz(grfDF["Fz1"][landing_start:landing_end], dx=dt)
         impulse_landing_Left = np.trapz(grfDF["Fz2"][landing_start:landing_end], dx=dt)
 
@@ -371,10 +371,10 @@ for folder in os.listdir(root_dir):
 
 # Convert results to a DataFrame and export to Excel or CSV
 df = pd.DataFrame(all_results)
-print(df)
+
 
 # UNCOMMENT LINES BELOW TO EXPORT TO EXCEL
-excel_output_path = "/Users/nick/Documents/University/Research Project/DATA OUTPUT SPREADSHEETS/Missing data patients included/PT/PT_Absolute_Asymmetries.xlsx"
+excel_output_path = "/Users/nick/Documents/University/Research Project/DATA OUTPUT SPREADSHEETS/Missing data patients included/HT/HT_Absolute_Asymmetries.xlsx"
 df.to_excel(excel_output_path, index=False)
 
 # Alternatively:
